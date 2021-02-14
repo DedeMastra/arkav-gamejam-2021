@@ -136,7 +136,7 @@ export class ObstacleView implements BaseView {
 			bottom + (gameObject.displayHeight / 2)
 		);
 
-		const speedRelative = -230;
+		const speedRelative = -800;
 		const displayPercentage = gameObject.getData(DataProps.displayPercentage) as number;
 		gameObject.setVelocityY(speedRelative * displayPercentage);
 

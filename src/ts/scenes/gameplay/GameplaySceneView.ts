@@ -24,6 +24,11 @@ export class GameplaySceneView implements BaseView {
 	private _restartKey: Phaser.Input.Keyboard.Key;
 	private _debugKey: Phaser.Input.Keyboard.Key;
 	private _scoreText: Text;
+	private _scoreBestText: Text;
+	private _scoreString: string;
+	private _scoreBestString: string;
+	public doRestart: boolean;
+	public showGameOver: boolean;
 
 	constructor (private _scene: Phaser.Scene) {
 		this.screenUtility = ScreenUtilController.getInstance();
@@ -58,6 +63,47 @@ export class GameplaySceneView implements BaseView {
 
 		const container = this._scene.add.container().setDepth(UI_LAYER);
 		container.add([scoreHolder.gameObject, this._scoreText.gameObject]);
+	}
+
+	createGameOverScreen (): void {
+		const { width, height } = this.screenUtility;
+		const scoreHolder = new Image(this._scene, (width * 0.925), (height * 2), Assets.panel_game_over.key);
+		scoreHolder.transform.setToScaleDisplaySize(this._displayPercentage);
+		
+		const { x: bottomX, y: bottomY } = scoreHolder.gameObject.getBottomLeft();
+		scoreHolder.gameObject.setPosition(300, 420);
+		
+		const { x, y } = scoreHolder.transform.getDisplayPositionFromCoordinate(0.5, 0.5);
+		const fontSize = 42 * scoreHolder.transform.displayToOriginalHeightRatio;
+		const container = this._scene.add.container().setDepth(UI_LAYER);
+
+		// best score
+		this._scoreBestText = new Text(this._scene, x, y, "0", {
+			fontFamily: FontAsset.potta.key,
+			fontStyle: "normal",
+			align: "center",
+			fontSize: `${fontSize}px`
+		});
+		this._scoreBestText.gameObject.setOrigin(0.5);
+		// this._scoreBestText.gameObject.setText('adadadqweqeqeqeqeqe')
+		this._scoreBestText.gameObject.setText(this._scoreBestString);
+		// console.log('duar', this._scoreBestText.gameObject.text);
+		container.add([scoreHolder.gameObject, this._scoreBestText.gameObject]);
+
+		// new score 
+		this._scoreText = new Text(this._scene, x, y+80, "0", {
+			fontFamily: FontAsset.potta.key,
+			fontStyle: "normal",
+			align: "center",
+			fontSize: `${fontSize}px`
+		});
+		this._scoreText.gameObject.setOrigin(0.5);
+		// this._scoreText.gameObject.setText('adbnakdnakjds')
+		this._scoreText.gameObject.setText(this._scoreString);
+		// console.log('duar', this._scoreText.gameObject.text);
+		container.add([scoreHolder.gameObject, this._scoreText.gameObject]);
+
+		this.setRestart(true);
 	}
 
 	private createTitleUI (): void {
@@ -106,6 +152,26 @@ export class GameplaySceneView implements BaseView {
 
 	setScore (score: number): void {
 		this._scoreText.gameObject.setText(score.toString());
+		this._scoreString = score.toString();
+	}
+
+	setRestart (status: boolean): void {
+		if(this._scoreString > this._scoreBestString){
+			this._scoreBestString = this._scoreString;
+			window.localStorage.setItem('scoreBestString', this._scoreBestString);
+		}
+		// console.log('masuk sini gak?');
+		this.doRestart = status;
+	}
+	getRestart (): boolean {
+		return this.doRestart;
+	}
+	
+	setGameOver (status: boolean): void {
+		this.showGameOver = status;
+	}
+	getGameOver (): boolean {
+		return this.showGameOver;
 	}
 
 	hideTitleScreen (): void {
@@ -122,12 +188,18 @@ export class GameplaySceneView implements BaseView {
 
 	create (displayPercentage: number): void {
 		this._displayPercentage = displayPercentage;
+		this._scoreBestString = JSON.parse(localStorage.getItem('scoreBestString') || '0');
 
 		this._restartKey = this._scene.input.keyboard.addKey("R");
 		this._debugKey = this._scene.input.keyboard.addKey("Z");
 
 		this.createScoreText();
 		this.createTitleUI();
+		
+		if(this.getGameOver()){
+			this.createGameOverScreen();
+		}
+
 		this.event.emit(EventNames.onCreateFinish);
 	}
 
